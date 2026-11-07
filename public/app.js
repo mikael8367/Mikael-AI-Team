@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 let controller = null;
+let accessToken = "";
 const history = [];
 
 function apiUrl(path) {
@@ -24,6 +25,7 @@ async function refreshHealth() {
     if (!response.ok) throw new Error("Servidor indisponível");
     const data = await response.json();
     $("connection").textContent = "Servidor conectado";
+    if (!data.accessConfigured) $("loginStatus").textContent = "O administrador ainda precisa configurar APP_ACCESS_PASSWORD e SESSION_SECRET no servidor.";
     $("statusDot").classList.add("ok");
     for (const key of ["openai", "gemini"]) {
       const ready = Boolean(data.providers?.[key]);
@@ -62,7 +64,7 @@ $("startDebate").addEventListener("click", async () => {
   try {
     const response = await fetch(apiUrl("/api/debate"), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + accessToken },
       body: JSON.stringify({ task, rounds: Number($("rounds").value) }),
       signal: controller.signal
     });
@@ -91,4 +93,42 @@ $("clearHistory").addEventListener("click", () => {
   $("transcript").replaceChildren();
   $("debateStatus").textContent = "Histórico desta sessão limpo.";
 });
+
+$("loginButton").addEventListener("click", async () => {
+  const password = $("accessPassword").value;
+  if (!password) {
+    $("loginStatus").textContent = "Digite a senha de acesso.";
+    return;
+  }
+  $("loginButton").disabled = true;
+  $("loginStatus").textContent = "Verificando acesso…";
+  try {
+    const response = await fetch(apiUrl("/api/login"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Não foi possível entrar.");
+    accessToken = data.token;
+    $("accessPassword").value = "";
+    $("loginBox").hidden = true;
+    $("debateBox").hidden = false;
+    $("loginStatus").textContent = "";
+  } catch (error) {
+    $("loginStatus").textContent = error.message;
+  } finally {
+    $("loginButton").disabled = false;
+  }
+});
+
+$("logoutButton").addEventListener("click", () => {
+  accessToken = "";
+  if (controller) controller.abort();
+  $("debateBox").hidden = true;
+  $("loginBox").hidden = false;
+  $("transcript").replaceChildren();
+  $("debateStatus").textContent = "";
+});
+
 refreshHealth();
