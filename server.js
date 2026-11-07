@@ -183,4 +183,5 @@ app.post("/api/debate", requireAuth, async (req, res) => {
 
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
-app.listen(PORT, "0.0.0.0", () => console.log(`Mikael AI Team ouvindo na porta ${PORT}`));
+const server = app.listen(PORT, "0.0.0.0", () => console.log(`Mikael AI Team ouvindo na porta ${PORT}`));
+module.exports = { app, server };
