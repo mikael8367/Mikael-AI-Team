@@ -69,11 +69,7 @@ app.post("/api/login", (req, res) => {
   const suppliedHash = crypto.createHash("sha256").update(supplied).digest();
   if (!crypto.timingSafeEqual(expectedHash, suppliedHash)) return res.status(401).json({ error: "Senha incorreta." });
   res.json({ ok: true, token: createSessionToken(), expiresIn: 43200 });
-}
-
-function extractOpenAIText(data) {
-  return data.output?.flatMap(item => item.content || []).filter(part => part.type === "output_text").map(part => part.text).join("\n") || "";
-}
+});
 async function requestJson(url, options, signal) {
   const response = await fetch(url, { ...options, signal: AbortSignal.any([signal, AbortSignal.timeout(90_000)]) });
   const data = await response.json().catch(() => ({}));
