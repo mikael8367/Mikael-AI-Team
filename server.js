@@ -6,6 +6,7 @@ const rateLimit = require("express-rate-limit");
 const path = require("path");
 const crypto = require("node:crypto");
 
+const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 const APP_ACCESS_PASSWORD = process.env.APP_ACCESS_PASSWORD || "";
 const SESSION_SECRET = process.env.SESSION_SECRET || "";
