@@ -4,11 +4,15 @@ const helmet = require("helmet");
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
+const crypto = require("node:crypto");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+const APP_ACCESS_PASSWORD = process.env.APP_ACCESS_PASSWORD || "";
+const SESSION_SECRET = process.env.SESSION_SECRET || "";
 const allowedOrigins = new Set(["https://localhost", "http://localhost", "capacitor://localhost"]);
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin(origin, callback) {
@@ -30,8 +34,53 @@ app.get("/api/health", (_req, res) => res.json({
   providers: {
     openai: Boolean(process.env.OPENAI_API_KEY),
     gemini: Boolean(process.env.GEMINI_API_KEY)
-  }
+  },
+  accessConfigured: Boolean(APP_ACCESS_PASSWORD && SESSION_SECRET)
 }));
+
+
+function createSessionToken() {
+  const payload = Buffer.from(JSON.stringify({ exp: Date.now() + 12 * 60 * 60 * 1000 })).toString("base64url");
+  const signature = crypto.createHmac("sha256", SESSION_SECRET).update(payload).digest("base64url");
+  return payload + "." + signature;
+}
+
+function requireAuth(req, res, next) {
+  if (!APP_ACCESS_PASSWORD || !SESSION_SECRET) {
+    return res.status(503).json({ error: "A proteção de acesso ainda não foi configurada no servidor." });
+  }
+  const token = String(req.headers.authorization || "").replace(/^Bearer\\s+/i, "");
+  const parts = token.split(".");
+  if (parts.length !== 2) return res.status(401).json({ error: "Faça login para iniciar o debate." });
+  const expected = crypto.createHmac("sha256", SESSION_SECRET).update(parts[0]).digest();
+  let supplied;
+  try { supplied = Buffer.from(parts[1], "base64url"); } catch { return res.status(401).json({ error: "Sessão inválida." }); }
+  if (supplied.length !== expected.length || !crypto.timingSafeEqual(supplied, expected)) {
+    return res.status(401).json({ error: "Sessão inválida." });
+  }
+  try {
+    const payload = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
+    if (!Number.isFinite(payload.exp) || payload.exp < Date.now()) {
+      return res.status(401).json({ error: "Sua sessão expirou. Entre novamente." });
+    }
+  } catch {
+    return res.status(401).json({ error: "Sessão inválida." });
+  }
+  next();
+}
+
+app.post("/api/login", (req, res) => {
+  if (!APP_ACCESS_PASSWORD || !SESSION_SECRET) {
+    return res.status(503).json({ error: "A senha de acesso ainda não foi configurada no servidor." });
+  }
+  const supplied = typeof req.body?.password === "string" ? req.body.password : "";
+  const expectedHash = crypto.createHash("sha256").update(APP_ACCESS_PASSWORD).digest();
+  const suppliedHash = crypto.createHash("sha256").update(supplied).digest();
+  if (!crypto.timingSafeEqual(expectedHash, suppliedHash)) {
+    return res.status(401).json({ error: "Senha incorreta." });
+  }
+  res.json({ ok: true, token: createSessionToken(), expiresIn: 43200 });
+});
 
 async function askOpenAI(messages, signal) {
   if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_NOT_CONFIGURED");
@@ -73,7 +122,7 @@ async function askGemini(prompt, signal) {
   return output;
 }
 
-app.post("/api/debate", async (req, res) => {
+app.post("/api/debate", requireAuth, async (req, res) => {
   const task = typeof req.body?.task === "string" ? req.body.task.trim() : "";
   const rounds = Number(req.body?.rounds ?? 2);
   if (!task || task.length > 12_000) {
