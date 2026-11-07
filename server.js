@@ -13,7 +13,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
   origin(origin, callback) {
     if (!origin || allowedOrigins.has(origin)) return callback(null, true);
-    return callback(new Error("Origem não autorizada."));
+    return callback(null, false);
   }
 }));
 app.use(express.json({ limit: "64kb" }));
