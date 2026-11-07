@@ -145,7 +145,9 @@ app.post("/api/debate", requireAuth, async (req, res) => {
   const transcript = [];
   try {
     for (let round = 1; round <= rounds; round++) {
-      const priorContext = transcript.map(entry => \`${entry.agent} (rodada ${entry.round}):\\n${entry.content}\`).join("\\n\\n");
+      const priorContext = transcript.map(entry =>
+        entry.agent + " (rodada " + entry.round + "):\n" + entry.content
+      ).join("\n\n");
       const proposal = await askOpenAI([
         {
           role: "system",
@@ -153,21 +155,34 @@ app.post("/api/debate", requireAuth, async (req, res) => {
         },
         {
           role: "user",
-          content: \`Tarefa: ${task}\\n\\nHistórico compartilhado do debate:\\n${priorContext || "Nenhum. Apresente a primeira proposta."}\`
+          content: "Tarefa: " + task + "\n\nHistórico compartilhado do debate:\n" +
+            (priorContext || "Nenhum. Apresente a primeira proposta.")
         }
       ], controller.signal);
       transcript.push({ round, agent: "ChatGPT", content: proposal });
 
       const critique = await askGemini(
-        \`Você é a IA revisora independente do Mikael AI Team. Analise a proposta, discorde quando houver motivos, identifique bugs, riscos, lacunas e testes necessários. Seja objetiva.\\n\\nTarefa original:\\n${task}\\n\\nHistórico compartilhado:\\n${priorContext}\\n\\nProposta atual do ChatGPT:\\n${proposal}\`,
+        "Você é a IA revisora independente do Mikael AI Team. Analise a proposta, discorde quando houver motivos, identifique bugs, riscos, lacunas e testes necessários. Seja objetiva." +
+          "\n\nTarefa original:\n" + task +
+          "\n\nHistórico compartilhado:\n" + priorContext +
+          "\n\nProposta atual do ChatGPT:\n" + proposal,
         controller.signal
       );
       transcript.push({ round, agent: "Gemini", content: critique });
     }
-    const fullContext = transcript.map(entry => \`${entry.agent} (rodada ${entry.round}):\\n${entry.content}\`).join("\\n\\n");
+    const fullContext = transcript.map(entry =>
+      entry.agent + " (rodada " + entry.round + "):\n" + entry.content
+    ).join("\n\n");
     const conclusion = await askOpenAI([
-      { role: "system", content: "Você é a IA responsável pela síntese final do Mikael AI Team. Consolide o debate, resolva divergências quando possível, indique o que permanece incerto e forneça uma conclusão objetiva com próximos passos e testes. Não alegue que executou código." },
-      { role: "user", content: \`Tarefa original:\\n${task}\\n\\nDebate completo:\\n${fullContext}\\n\\nProduza a conclusão final.\` }
+      {
+        role: "system",
+        content: "Você é a IA responsável pela síntese final do Mikael AI Team. Consolide o debate, resolva divergências quando possível, indique o que permanece incerto e forneça uma conclusão objetiva com próximos passos e testes. Não alegue que executou código."
+      },
+      {
+        role: "user",
+        content: "Tarefa original:\n" + task + "\n\nDebate completo:\n" + fullContext +
+          "\n\nProduza a conclusão final."
+      }
     ], controller.signal);
     transcript.push({ round: rounds, agent: "Conclusão", content: conclusion });
     if (!res.destroyed) {
