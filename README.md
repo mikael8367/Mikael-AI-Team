@@ -1,42 +1,68 @@
 # Mikael AI Team
 
-Aplicativo mobile-first para colaboração entre ChatGPT (OpenAI) e Gemini (Google), com debate estruturado, contexto compartilhado e revisão final.
+Aplicativo mobile-first para debates colaborativos entre até sete provedores de IA, com seleção individual, contexto compartilhado e síntese final.
 
-## Recursos atuais
+## Provedores integrados
 
-- Interface responsiva com abas inferiores animadas: Início, Conversa e Configurações.
-- ChatGPT atua como desenvolvedora; Gemini como revisora independente.
-- Histórico compartilhado entre as rodadas e síntese final do ChatGPT.
-- Limite de 1 a 4 rodadas por debate.
-- Cancelamento do debate também interrompe as chamadas externas.
-- Chaves de API mantidas somente no servidor.
-- Senha de acesso e sessões assinadas com validade de 12 horas.
-- Rate limit, limite de tamanho das tarefas e validação dos dados.
-- Workflow de CI e workflow manual de compilação Android.
+- OpenAI / ChatGPT
+- Google Gemini
+- Groq
+- OpenRouter
+- DeepSeek
+- Mistral AI
+- Claude / Anthropic
 
-## Publicar o backend
+A integração não significa que todas as APIs sejam gratuitas. Cada provedor exige sua própria chave e está sujeito a preços, cotas, disponibilidade e termos do respectivo serviço. Alguns modelos do Groq, Gemini e OpenRouter podem oferecer cotas gratuitas, que mudam com o tempo. Verifique as condições diretamente com cada provedor.
 
-1. Crie um serviço no Render usando este repositório e o arquivo `render.yaml`.
-2. Configure as variáveis `OPENAI_API_KEY`, `GEMINI_API_KEY` e `APP_ACCESS_PASSWORD`.
-3. O Render gera `SESSION_SECRET) automaticamente pelo blueprint.
-4. Aguarde o deploy e teste `https://SEU-SERVICO.onrender.com/api/health`.
+## Como funciona o debate
 
-Use uma senha longa para `APP_ACCESS_PASSWORD`. As chaves das APIs nunca devem ser colocadas no app, em arquivos públicos ou no Git.
+- **Escolher minhas IAs:** selecione uma ou mais IAs configuradas no servidor.
+- **Automático:** usa todas as IAs com chave configurada; se uma falhar por limite de créditos/cota, registra a indisponibilidade e continua com as demais.
+- Cada participante recebe a tarefa e o histórico compartilhado das respostas anteriores.
+- A última IA que participou faz a síntese final.
+- O histórico identifica o provedor que realmente respondeu. Uma falha nunca é apresentada como participação concluída.
+- Limite de 1 a 4 rodadas.
 
-## Gerar o APK pelo celular
+## Configurar no Render
 
-1. Abra as configurações do repositório no GitHub.
-2. Em **Secrets and variables → Actions → Variables**, crie `API_BASE_URL` com a URL HTTPS pública do serviço Render, sem barra no final.
-3. Abra **Actions → Android APK → Run workflow**.
-4. Quando terminar, abra a execução e baixe o artefato `Mikael-AI-Team-debug`.
+Configure em **Dashboard → serviço → Environment** somente as chaves dos provedores que pretende usar:
 
-O APK só pode funcionar conectado ao backend publicado. A compilação ainda depende da configuração das chaves e da URL pública.
+| Variável | Provedor |
+| --- | --- |
+| `OPENAI_API_KEY` | OpenAI |
+| `GEMINI_API_KEY` | Google Gemini |
+| `GROQ_API_KEY` | Groq |
+| `OPENROUTER_API_KEY` | OpenRouter |
+| `DEEPSEEK_API_KEY` | DeepSeek |
+| `MISTRAL_API_KEY` | Mistral |
+| `ANTHROPIC_API_KEY` | Claude |
 
-## Desenvolvimento local
+Modelos podem ser substituídos por variáveis opcionais: `OPENAI_MODEL`, `GEMINI_MODEL`, `GROQ_MODEL`, `OPENROUTER_MODEL`, `DEEPSEEK_MODEL`, `MISTRAL_MODEL` e `CLAUDE_MODEL`.
 
-1. Copie `.env.example` para `.env`.
-2. Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` e `APP_ACCESS_PASSWORD`.
-3. Defina um valor aleatório e forte para `SESSION_SECRET`.
-4. Execute `npm install`, depois `npm run check`, `npm test` e `npm start`.
+Também são necessárias `APP_ACCESS_PASSWORD` e `SESSION_SECRET`. O blueprint Render gera o segredo de sessão automaticamente. Não coloque chaves no frontend, no APK, em commits ou em mensagens. Não compartilhe credenciais no chat.
+
+## Deploy
+
+1. Publique este repositório como serviço Node no Render usando `render.yaml`.
+2. Configure as variáveis de ambiente acima para os provedores desejados.
+3. Aguarde o deploy e abra `/api/health` para conferir quais provedores estão configurados. A resposta informa apenas estado e modelo, nunca as chaves.
+4. Abra o endereço HTTPS do serviço para usar a interface.
+
+## APK Android pelo celular
+
+1. Em GitHub → Settings → Secrets and variables → Actions → Variables, crie `API_BASE_URL` com a URL HTTPS do Render, sem barra no final.
+2. Em Actions, abra o workflow **Android APK** e execute **Run workflow**.
+3. Quando a execução terminar, baixe o artefato `Mikael-AI-Team-debug`.
+
+O APK depende do backend online. A criação do APK é uma etapa separada; este commit não gera nem publica APK automaticamente.
+
+## Desenvolvimento e testes
+
+```bash
+npm install
+npm run check
+npm test
+npm start
+```
 
 Nunca publique chaves de API, senhas ou tokens.
