@@ -1,0 +1,9 @@
+{
+  "appId": "com.mikael.aiteam",
+  "appName": "Mikael AI Team",
+  "webDir": "public",
+  "bundledWebRuntime": false,
+  "android": {
+    "backgroundColor": "#07110d"
+  }
+}
