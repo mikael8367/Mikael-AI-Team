@@ -1,23 +1,42 @@
 # Mikael AI Team
 
-Aplicativo mobile-first para colaboração entre ChatGPT (OpenAI) e Gemini (Google), com debate estruturado, contexto compartilhado e revisão de código.
+Aplicativo mobile-first para colaboração entre ChatGPT (OpenAI) e Gemini (Google), com debate estruturado, contexto compartilhado e revisão final.
 
-## Estado inicial
+## Recursos atuais
 
-Este repositório está sendo preparado para um MVP seguro. As chaves das APIs devem permanecer exclusivamente no servidor, em variáveis de ambiente.
+- Interface responsiva com abas inferiores animadas: Início, Conversa e Configurações.
+- ChatGPT atua como desenvolvedora; Gemini como revisora independente.
+- Histórico compartilhado entre as rodadas e síntese final do ChatGPT.
+- Limite de 1 a 4 rodadas por debate.
+- Cancelamento do debate também interrompe as chamadas externas.
+- Chaves de API mantidas somente no servidor.
+- Senha de acesso e sessões assinadas com validade de 12 horas.
+- Rate limit, limite de tamanho das tarefas e validação dos dados.
+- Workflow de CI e workflow manual de compilação Android.
 
-## Tecnologias planejadas
+## Publicar o backend
 
-- Node.js + Express para a API
-- Interface web responsiva, preparada para Android via Capacitor
-- OpenAI API e Gemini API chamadas somente pelo backend
-- GitHub Actions para testes e futura compilação Android
+1. Crie um serviço no Render usando este repositório e o arquivo `render.yaml`.
+2. Configure as variáveis `OPENAI_API_KEY`, `GEMINI_API_KEY` e `APP_ACCESS_PASSWORD`.
+3. O Render gera `SESSION_SECRET) automaticamente pelo blueprint.
+4. Aguarde o deploy e teste `https://SEU-SERVICO.onrender.com/api/health`.
 
-## Configuração
+Use uma senha longa para `APP_ACCESS_PASSWORD`. As chaves das APIs nunca devem ser colocadas no app, em arquivos públicos ou no Git.
+
+## Gerar o APK pelo celular
+
+1. Abra as configurações do repositório no GitHub.
+2. Em **Secrets and variables → Actions → Variables**, crie `API_BASE_URL` com a URL HTTPS pública do serviço Render, sem barra no final.
+3. Abra **Actions → Android APK → Run workflow**.
+4. Quando terminar, abra a execução e baixe o artefato `Mikael-AI-Team-debug`.
+
+O APK só pode funcionar conectado ao backend publicado. A compilação ainda depende da configuração das chaves e da URL pública.
+
+## Desenvolvimento local
 
 1. Copie `.env.example` para `.env`.
-2. Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` e `APP_ACCESS_PASSWORD` no ambiente do servidor. Gere um valor longo e aleatório para `SESSION_SECRET`.
-3. Instale as dependências com `npm install`.
-4. Execute `npm start`.
+2. Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` e `APP_ACCESS_PASSWORD`.
+3. Defina um valor aleatório e forte para `SESSION_SECRET`.
+4. Execute `npm install`, depois `npm run check`, `npm test` e `npm start`.
 
-Nunca publique chaves de API no frontend, no Git ou em logs.
+Nunca publique chaves de API, senhas ou tokens.
