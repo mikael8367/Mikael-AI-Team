@@ -232,14 +232,14 @@ app.post("/api/debate", requireAuth, async (req, res) => {
     if (!used.length) return res.status(503).json({ error: "Nenhuma IA conseguiu responder. Confira as cotas e as chaves configuradas.", partialTranscript: transcript });
     const synthesizers = participants.slice().reverse().filter(id => used.includes(id));
     if (synthesizers.length && transcript.length) {
-      const context = transcript.map(e => e.agent + " (rodada " + e.round + "):\\n" + e.content).join("\\n\\n");
+      const context = transcript.map(e => e.agent + " (rodada " + e.round + "):\n" + e.content).join("\n\n");
       let conclusion = "";
       let synthesisProvider = "";
       for (const id of synthesizers) {
         try {
           conclusion = await askProvider(id, [
             { role: "system", content: "Você é responsável pela síntese final. Consolide as contribuições, destaque consenso, divergências, riscos e próximos passos. Não invente testes ou execuções." },
-            { role: "user", content: "Tarefa:\\n" + task + "\\n\\nDebate completo:\\n" + context + "\\n\\nEscreva a conclusão final." }
+            { role: "user", content: "Tarefa:\n" + task + "\n\nDebate completo:\n" + context + "\n\nEscreva a conclusão final." }
           ], controller.signal);
           synthesisProvider = id;
           break;
