@@ -155,6 +155,7 @@ app.post("/api/debate", requireAuth, async (req, res) => {
   if (!task || task.length > 12_000) return res.status(400).json({ error: "A tarefa deve ter entre 1 e 12000 caracteres." });
   if (!Number.isInteger(rounds) || rounds < 1 || rounds > 4) return res.status(400).json({ error: "Rodadas deve ser um número inteiro entre 1 e 4." });
   if (!participants) return res.status(400).json({ error: "Escolha pelo menos uma IA válida." });
+  if (!participants.length) return res.status(503).json({ error: "Nenhuma IA está configurada no servidor." });
   const unavailable = participants.filter(id => !process.env[PROVIDERS[id].env]);
   if (unavailable.length) return res.status(503).json({ error: "Configure as chaves das IAs selecionadas no servidor.", missing: unavailable });
   const controller = new AbortController();
@@ -182,6 +183,7 @@ app.post("/api/debate", requireAuth, async (req, res) => {
         }
       }
     }
+    if (!used.length) return res.status(503).json({ error: "Nenhuma IA conseguiu responder. Confira as cotas e as chaves configuradas.", partialTranscript: transcript });
     const synthesizer = participants.slice().reverse().find(id => used.includes(id));
     if (synthesizer && transcript.length) {
       const context = transcript.map(e => e.agent + " (rodada " + e.round + "):\n" + e.content).join("\n\n");
