@@ -19,7 +19,8 @@
     "helmet": "^8.0.0",
     "dotenv": "^16.4.7",
     "@capacitor/core": "^7.4.3",
-    "@capacitor/android": "^7.4.3"
+    "@capacitor/android": "^7.4.3",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.4.3"
