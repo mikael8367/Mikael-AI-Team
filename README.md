@@ -16,7 +16,7 @@ Este repositório está sendo preparado para um MVP seguro. As chaves das APIs d
 ## Configuração
 
 1. Copie `.env.example` para `.env`.
-2. Configure `OPENAI_API_KEY` e `GEMINI_API_KEY` no ambiente do servidor.
+2. Configure `OPENAI_API_KEY`, `GEMINI_API_KEY` e `APP_ACCESS_PASSWORD` no ambiente do servidor. Gere um valor longo e aleatório para `SESSION_SECRET`.
 3. Instale as dependências com `npm install`.
 4. Execute `npm start`.
 
