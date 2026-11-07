@@ -230,14 +230,24 @@ app.post("/api/debate", requireAuth, async (req, res) => {
       }
     }
     if (!used.length) return res.status(503).json({ error: "Nenhuma IA conseguiu responder. Confira as cotas e as chaves configuradas.", partialTranscript: transcript });
-    const synthesizer = participants.slice().reverse().find(id => used.includes(id));
-    if (synthesizer && transcript.length) {
-      const context = transcript.map(e => e.agent + " (rodada " + e.round + "):\n" + e.content).join("\n\n");
-      const conclusion = await askProvider(synthesizer, [
-        { role: "system", content: "Você é responsável pela síntese final. Consolide as contribuições, destaque consenso, divergências, riscos e próximos passos. Não invente testes ou execuções." },
-        { role: "user", content: "Tarefa:\n" + task + "\n\nDebate completo:\n" + context + "\n\nEscreva a conclusão final." }
-      ], controller.signal);
-      transcript.push({ round: rounds, agent: "Síntese · " + PROVIDERS[synthesizer].label, provider: synthesizer, content: conclusion });
+    const synthesizers = participants.slice().reverse().filter(id => used.includes(id));
+    if (synthesizers.length && transcript.length) {
+      const context = transcript.map(e => e.agent + " (rodada " + e.round + "):\\n" + e.content).join("\\n\\n");
+      let conclusion = "";
+      let synthesisProvider = "";
+      for (const id of synthesizers) {
+        try {
+          conclusion = await askProvider(id, [
+            { role: "system", content: "Você é responsável pela síntese final. Consolide as contribuições, destaque consenso, divergências, riscos e próximos passos. Não invente testes ou execuções." },
+            { role: "user", content: "Tarefa:\\n" + task + "\\n\\nDebate completo:\\n" + context + "\\n\\nEscreva a conclusão final." }
+          ], controller.signal);
+          synthesisProvider = id;
+          break;
+        } catch (error) {
+          if (mode !== "auto" || !isTransientProviderError(error)) throw error;
+        }
+      }
+      if (conclusion) transcript.push({ round: rounds, agent: "Síntese · " + PROVIDERS[synthesisProvider].label, provider: synthesisProvider, content: conclusion });
     }
     if (!res.destroyed) res.json({ ok: true, rounds, participants: used, transcript, mode: used.length > 1 ? "multi-ai" : "single-ai", note: "Somente as IAs identificadas no histórico participaram efetivamente. Valide e teste sugestões antes de aplicá-las." });
   } catch (error) {
