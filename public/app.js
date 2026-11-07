@@ -46,6 +46,7 @@ async function refreshHealth() {
       const checkbox = document.querySelector('input[name="provider"][value="' + id + '"]');
       if (checkbox) {
         checkbox.dataset.configured = String(ready);
+        if (!ready) checkbox.checked = false;
         checkbox.disabled = !ready || $("providerMode").value === "auto";
         const option = checkbox.closest(".provider-option");
         if (option) option.classList.toggle("unavailable", !ready);
