@@ -144,8 +144,8 @@ app.post("/api/debate", requireAuth, async (req, res) => {
   });
   const transcript = [];
   try {
-    let previous = "";
     for (let round = 1; round <= rounds; round++) {
+      const priorContext = transcript.map(entry => `${entry.agent} (rodada ${entry.round}):\\n${entry.content}`).join("\\n\\n");
       const proposal = await askOpenAI([
         {
           role: "system",
@@ -163,8 +163,13 @@ app.post("/api/debate", requireAuth, async (req, res) => {
         controller.signal
       );
       transcript.push({ round, agent: "Gemini", content: critique });
-      previous = critique;
     }
+    const fullContext = transcript.map(entry => `${entry.agent} (rodada ${entry.round}):\\n${entry.content}`).join("\\n\\n");
+    const conclusion = await askOpenAI([
+      { role: "system", content: "Você é a IA responsável pela síntese final do Mikael AI Team. Consolide o debate, resolva divergências quando possível, indique o que permanece incerto e forneça uma conclusão objetiva com próximos passos e testes. Não alegue que executou código." },
+      { role: "user", content: `Tarefa original:\\n${task}\\n\\nDebate completo:\\n${fullContext}\\n\\nProduza a conclusão final.` }
+    ], controller.signal);
+    transcript.push({ round: rounds, agent: "Conclusão", content: conclusion });
     if (!res.destroyed) {
       res.json({
         ok: true,
