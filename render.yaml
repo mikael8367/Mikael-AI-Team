@@ -13,6 +13,10 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: APP_ACCESS_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
       - key: OPENAI_MODEL
         value: gpt-4.1-mini
       - key: GEMINI_MODEL
