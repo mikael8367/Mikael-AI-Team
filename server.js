@@ -49,7 +49,7 @@ function requireAuth(req, res, next) {
   if (!APP_ACCESS_PASSWORD || !SESSION_SECRET) {
     return res.status(503).json({ error: "A proteção de acesso ainda não foi configurada no servidor." });
   }
-  const token = String(req.headers.authorization || "").replace(/^Bearer\\s+/i, "");
+  const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   const parts = token.split(".");
   if (parts.length !== 2) return res.status(401).json({ error: "Faça login para iniciar o debate." });
   const expected = crypto.createHmac("sha256", SESSION_SECRET).update(parts[0]).digest();
