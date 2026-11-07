@@ -6,7 +6,7 @@ process.env.APP_ACCESS_PASSWORD = "test-access-password";
 process.env.SESSION_SECRET = "test-session-secret-that-is-long-enough";
 process.env.MAX_REQUESTS_PER_MINUTE = "100";
 
-const { server, normalizeParticipants, isQuotaError, PROVIDERS, extractGeminiOutput } = require("../server");
+const { server, normalizeParticipants, isQuotaError, isTransientProviderError, PROVIDERS, extractGeminiOutput } = require("../server");
 
 test("Gemini uses the current model and extracts Interactions API text", () => {
   assert.equal(PROVIDERS.gemini.defaultModel, "gemini-3.8-flash");
@@ -33,6 +33,12 @@ test("automatic mode only chooses providers with configured keys", () => {
 test("quota errors are recognized for automatic fallback", () => {
   assert.equal(isQuotaError(Object.assign(new Error("No credits remaining"), { status: 429 })), true);
   assert.equal(isQuotaError(Object.assign(new Error("bad request"), { status: 400 })), false);
+});
+
+test("temporary provider overloads are recognized for retry and automatic fallback", () => {
+  assert.equal(isTransientProviderError(Object.assign(new Error("high demand, try again later"), { status: 503 })), true);
+  assert.equal(isTransientProviderError(Object.assign(new Error("rate limited"), { status: 429 })), true);
+  assert.equal(isTransientProviderError(Object.assign(new Error("invalid API key"), { status: 401 })), false);
 });
 
 test("server starts and health exposes provider status without secrets", async () => {
