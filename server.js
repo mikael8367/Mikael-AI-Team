@@ -224,6 +224,7 @@ app.post("/api/debate", requireAuth, async (req, res) => {
   }
 });
 
+app.use("/api", (_req, res) => res.status(404).json({ error: "Rota da API não encontrada." }));
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 const server = app.listen(PORT, "0.0.0.0", () => console.log("Mikael AI Team ouvindo na porta " + PORT));
