@@ -178,7 +178,7 @@ app.post("/api/debate", requireAuth, async (req, res) => {
           transcript.push({ round, agent: PROVIDERS[id].label, provider: id, content });
           if (!used.includes(id)) used.push(id);
         } catch (error) {
-          if (isQuotaError(error) && mode === "auto" && id === "openai") {
+          if (isQuotaError(error) && mode === "auto") {
             transcript.push({ round, agent: PROVIDERS[id].label, provider: id, status: "indisponível", content: "OpenAI indisponível por limite de créditos ou requisições. O debate continuará sem ela." });
             continue;
           }
