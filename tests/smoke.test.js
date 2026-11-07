@@ -1,4 +1,4 @@
-const test = require("node:test");
+const { test, after } = require("node:test");
 const assert = require("node:assert/strict");
 
 process.env.PORT = "0";
@@ -55,6 +55,6 @@ test("login rejects wrong password and issues a signed session for the right one
   assert.equal(invalidRounds.status, 400);
 });
 
-test("server closes cleanly after integration tests", async () => {
-  await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+after(async () => {
+  if (server.listening) await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
 });
