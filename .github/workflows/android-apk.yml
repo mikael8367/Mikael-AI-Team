@@ -30,7 +30,7 @@ jobs:
           const fs = require("node:fs");
           const url = process.env.API_BASE_URL;
           if (!/^https:\/\//.test(url)) throw new Error("API_BASE_URL must use HTTPS");
-          fs.writeFileSync("public/runtime-config.js", "window.MIKAEL_API_BASE = " + JSON.stringify(url.replace(/\/$/, "")) + ";\\n");
+          fs.writeFileSync("public/runtime-config.js", "window.MIKAEL_API_BASE = " + JSON.stringify(url.replace(/\/$/, "")) + ";\n");
           NODE
       - name: Generate Android project
         run: npx cap add android
