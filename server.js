@@ -81,6 +81,17 @@ async function requestJson(url, options, signal) {
   }
   return data;
 }
+async function requestGeminiWithRetry(options, signal) {
+  const delays = [1200, 2800];
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await requestJson("https://generativelanguage.googleapis.com/v1beta/interactions", options, signal);
+    } catch (error) {
+      if (signal.aborted || !isTransientProviderError(error) || attempt >= delays.length) throw error;
+      await new Promise(resolve => setTimeout(resolve, delays[attempt]));
+    }
+  }
+}
 function extractGeminiOutput(data) {
   if (typeof data?.output_text === "string" && data.output_text.trim()) return data.output_text.trim();
   const blocks = [];
@@ -115,7 +126,7 @@ async function askProvider(id, messages, signal) {
   let data;
   if (provider.kind === "gemini") {
     const input = messages.map(m => m.role.toUpperCase() + ":\n" + m.content).join("\n\n");
-    data = await requestJson("https://generativelanguage.googleapis.com/v1beta/interactions", {
+    data = await requestGeminiWithRetry({
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({ model, input })
@@ -162,6 +173,12 @@ function normalizeParticipants(input, mode) {
   if (selected.length > available.length) return null;
   return selected;
 }
+function isTransientProviderError(error) {
+  const status = Number(error.status || 0);
+  const message = String(error.message || "").toLowerCase();
+  return [429, 500, 502, 503, 504].includes(status) ||
+    /high demand|overloaded|temporarily unavailable|try again later|resource exhausted/.test(message);
+}
 function isQuotaError(error) {
   const code = String(error.code || "").toLowerCase();
   const message = String(error.message || "").toLowerCase();
@@ -197,8 +214,15 @@ app.post("/api/debate", requireAuth, async (req, res) => {
           transcript.push({ round, agent: PROVIDERS[id].label, provider: id, content });
           if (!used.includes(id)) used.push(id);
         } catch (error) {
+          if (mode === "auto" && isTransientProviderError(error)) {
+            transcript.push({
+              round, agent: PROVIDERS[id].label, provider: id, status: "indisponível",
+              content: PROVIDERS[id].label + " está temporariamente indisponível ou sobrecarregada. O debate continuará com as outras IAs."
+            });
+            continue;
+          }
           if (isQuotaError(error) && mode === "auto") {
-            transcript.push({ round, agent: PROVIDERS[id].label, provider: id, status: "indisponível", content: "OpenAI indisponível por limite de créditos ou requisições. O debate continuará sem ela." });
+            transcript.push({ round, agent: PROVIDERS[id].label, provider: id, status: "indisponível", content: PROVIDERS[id].label + " indisponível por limite de créditos ou requisições. O debate continuará sem ela." });
             continue;
           }
           throw error;
@@ -228,4 +252,4 @@ app.use("/api", (_req, res) => res.status(404).json({ error: "Rota da API não e
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 const server = app.listen(PORT, "0.0.0.0", () => console.log("Mikael AI Team ouvindo na porta " + PORT));
-module.exports = { app, server, PROVIDERS, normalizeParticipants, isQuotaError, extractGeminiOutput };
+module.exports = { app, server, PROVIDERS, normalizeParticipants, isQuotaError, isTransientProviderError, extractGeminiOutput };
