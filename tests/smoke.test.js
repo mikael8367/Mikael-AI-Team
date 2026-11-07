@@ -47,6 +47,13 @@ test("server starts and health exposes provider status without secrets", async (
   assert.equal(JSON.stringify(data).includes("test-session-secret"), false);
 });
 
+test("unknown API routes return JSON instead of the HTML application shell", async () => {
+  const response = await fetch("http://127.0.0.1:" + server.address().port + "/api/rota-inexistente");
+  assert.equal(response.status, 404);
+  assert.match(response.headers.get("content-type"), /application\\/json/);
+  assert.deepEqual(await response.json(), { error: "Rota da API não encontrada." });
+});
+
 test("debate endpoint rejects unauthenticated requests", async () => {
   const response = await fetch("http://127.0.0.1:" + server.address().port + "/api/debate", {
     method: "POST", headers: { "Content-Type": "application/json" },
