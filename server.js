@@ -98,7 +98,7 @@ function extractGeminiOutput(data) {
       }
     }
   }
-  return blocks.join("\\n").trim();
+  return blocks.join("\n").trim();
 }
 async function askProvider(id, messages, signal) {
   const provider = PROVIDERS[id];
