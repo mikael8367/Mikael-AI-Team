@@ -16,10 +16,11 @@
 </section>
 <section class="tab-panel" id="chatPanel">
 <div class="section-head"><span class="eyebrow">SALA DE DEBATE</span><h2>Nova conversa</h2><p>Descreva o que você quer construir ou resolver.</p></div>
-<label for="task">Sua tarefa</label><textarea id="task" maxlength="12000" placeholder="Ex.: Analise a arquitetura do meu app Android e proponha melhorias de desempenho…"></textarea>
+<div id="loginBox" class="quick-card"><b>Acesso protegido</b><p>Digite a senha definida pelo administrador do servidor para usar as APIs.</p><label for="accessPassword">Senha de acesso</label><input id="accessPassword" type="password" autocomplete="current-password" placeholder="Senha do Mikael AI Team"><button id="loginButton" class="primary wide">Entrar</button><div id="loginStatus" class="hint" aria-live="polite"></div></div>
+<div id="debateBox" hidden><label for="task">Sua tarefa</label><textarea id="task" maxlength="12000" placeholder="Ex.: Analise a arquitetura do meu app Android e proponha melhorias de desempenho…"></textarea>
 <div class="round-control"><label for="rounds">Rodadas de debate</label><select id="rounds"><option value="1">1 rodada</option><option value="2" selected>2 rodadas</option><option value="3">3 rodadas</option><option value="4">4 rodadas</option></select></div>
 <button id="startDebate" class="primary wide">Iniciar debate <span>↗</span></button><button id="stopDebate" class="secondary wide" hidden>Parar</button>
-<div id="debateStatus" class="hint" aria-live="polite"></div><div id="transcript" class="transcript"></div>
+<button id="logoutButton" class="text-button">Sair</button><div id="debateStatus" class="hint" aria-live="polite"></div><div id="transcript" class="transcript"></div></div>
 </section>
 <section class="tab-panel" id="settingsPanel">
 <div class="section-head"><span class="eyebrow">PREFERÊNCIAS</span><h2>Configurações</h2><p>As chaves são configuradas no servidor e nunca são solicitadas nesta tela.</p></div>
