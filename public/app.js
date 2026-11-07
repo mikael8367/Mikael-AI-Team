@@ -10,6 +10,16 @@ function apiUrl(path) {
   if (location.protocol === "file:" || location.origin === "null") throw new Error("Configure uma URL HTTPS do servidor antes de usar o APK.");
   return path;
 }
+async function readApiJson(response) {
+  const raw = await response.text();
+  const type = response.headers.get("content-type") || "";
+  if (!type.includes("application/json")) {
+    const detail = raw.trim().startsWith("<") ? "O servidor devolveu uma página HTML em vez de JSON." : "O servidor devolveu uma resposta em formato inesperado.";
+    throw new Error(detail + " HTTP " + response.status + ". Atualize a página e tente novamente.");
+  }
+  try { return JSON.parse(raw); }
+  catch { throw new Error("A resposta JSON do servidor está inválida (HTTP " + response.status + ")."); }
+}
 function showTab(name) {
   document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.toggle("active", panel.id === name + "Panel"));
   document.querySelectorAll(".nav-item").forEach(button => button.classList.toggle("selected", button.dataset.tab === name));
@@ -28,7 +38,7 @@ async function refreshHealth() {
   try {
     const response = await fetch(apiUrl("/api/health"));
     if (!response.ok) throw new Error("Servidor indisponível");
-    const data = await response.json();
+    const data = await readApiJson(response);
     $("connection").textContent = "Servidor conectado";
     if (!data.accessConfigured) $("loginStatus").textContent = "O administrador ainda precisa configurar APP_ACCESS_PASSWORD e SESSION_SECRET no servidor.";
     $("statusDot").classList.add("ok");
@@ -102,7 +112,7 @@ $("startDebate").addEventListener("click", async () => {
       body: JSON.stringify({ task, rounds: Number($("rounds").value), providers, mode }),
       signal: controller.signal
     });
-    const data = await response.json();
+    const data = await readApiJson(response);
     if (!response.ok) {
       const error = new Error(data.error || "Falha no debate");
       error.partialTranscript = data.partialTranscript;
