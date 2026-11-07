@@ -13,6 +13,16 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: MISTRAL_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
       - key: APP_ACCESS_PASSWORD
         sync: false
       - key: SESSION_SECRET
@@ -21,3 +31,13 @@ services:
         value: gpt-4.1-mini
       - key: GEMINI_MODEL
         value: gemini-2.5-flash
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: OPENROUTER_MODEL
+        value: meta-llama/llama-3.3-70b-instruct:free
+      - key: DEEPSEEK_MODEL
+        value: deepseek-chat
+      - key: MISTRAL_MODEL
+        value: mistral-small-latest
+      - key: CLAUDE_MODEL
+        value: claude-3-5-haiku-latest
