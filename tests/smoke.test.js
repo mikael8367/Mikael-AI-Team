@@ -6,7 +6,14 @@ process.env.APP_ACCESS_PASSWORD = "test-access-password";
 process.env.SESSION_SECRET = "test-session-secret-that-is-long-enough";
 process.env.MAX_REQUESTS_PER_MINUTE = "100";
 
-const { server, normalizeParticipants, isQuotaError, PROVIDERS } = require("../server");
+const { server, normalizeParticipants, isQuotaError, PROVIDERS, extractGeminiOutput } = require("../server");
+
+test("Gemini uses the current model and extracts Interactions API text", () => {
+  assert.equal(PROVIDERS.gemini.defaultModel, "gemini-3.8-flash");
+  assert.equal(extractGeminiOutput({ output_text: "  resposta Gemini  " }), "resposta Gemini");
+  assert.equal(extractGeminiOutput({ output: [{ type: "message", content: [{ type: "text", text: "resposta alternativa" }] }] }), "resposta alternativa");
+  assert.equal(extractGeminiOutput({ output: [] }), "");
+});
 
 test("provider catalog contains all seven requested services", () => {
   assert.deepEqual(Object.keys(PROVIDERS), ["openai", "gemini", "groq", "openrouter", "deepseek", "mistral", "claude"]);
