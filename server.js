@@ -13,7 +13,7 @@ const SESSION_SECRET = process.env.SESSION_SECRET || "";
 const allowedOrigins = new Set(["https://localhost", "http://localhost", "capacitor://localhost"]);
 const PROVIDERS = {
   openai: { label: "ChatGPT / OpenAI", env: "OPENAI_API_KEY", modelEnv: "OPENAI_MODEL", defaultModel: "gpt-4.1-mini", kind: "openai" },
-  gemini: { label: "Gemini", env: "GEMINI_API_KEY", modelEnv: "GEMINI_MODEL", defaultModel: "gemini-2.5-flash", kind: "gemini" },
+  gemini: { label: "Gemini", env: "GEMINI_API_KEY", modelEnv: "GEMINI_MODEL", defaultModel: "gemini-3.8-flash", kind: "gemini" },
   groq: { label: "Groq", env: "GROQ_API_KEY", modelEnv: "GROQ_MODEL", defaultModel: "llama-3.3-70b-versatile", kind: "compatible", base: "https://api.groq.com/openai/v1/chat/completions" },
   openrouter: { label: "OpenRouter", env: "OPENROUTER_API_KEY", modelEnv: "OPENROUTER_MODEL", defaultModel: "meta-llama/llama-3.3-70b-instruct:free", kind: "compatible", base: "https://openrouter.ai/api/v1/chat/completions" },
   deepseek: { label: "DeepSeek", env: "DEEPSEEK_API_KEY", modelEnv: "DEEPSEEK_MODEL", defaultModel: "deepseek-chat", kind: "compatible", base: "https://api.deepseek.com/chat/completions" },
@@ -81,6 +81,25 @@ async function requestJson(url, options, signal) {
   }
   return data;
 }
+function extractGeminiOutput(data) {
+  if (typeof data?.output_text === "string" && data.output_text.trim()) return data.output_text.trim();
+  const blocks = [];
+  for (const item of Array.isArray(data?.output) ? data.output : []) {
+    for (const part of Array.isArray(item?.content) ? item.content : []) {
+      if (part?.type === "text" && typeof part.text === "string") blocks.push(part.text);
+    }
+  }
+  if (!blocks.length) {
+    for (const step of Array.isArray(data?.steps) ? data.steps : []) {
+      if (step?.type === "model_output") {
+        for (const part of Array.isArray(step.content) ? step.content : []) {
+          if (part?.type === "text" && typeof part.text === "string") blocks.push(part.text);
+        }
+      }
+    }
+  }
+  return blocks.join("\\n").trim();
+}
 async function askProvider(id, messages, signal) {
   const provider = PROVIDERS[id];
   if (!provider) throw new Error("PROVIDER_NOT_SUPPORTED");
@@ -90,15 +109,18 @@ async function askProvider(id, messages, signal) {
     error.status = 503;
     throw error;
   }
-  const model = process.env[provider.modelEnv] || provider.defaultModel;
+  const configuredModel = process.env[provider.modelEnv] || provider.defaultModel;
+  // Migrate the old retired default automatically, even if Render still has the old env value.
+  const model = id === "gemini" && configuredModel === "gemini-2.5-flash" ? "gemini-3.8-flash" : configuredModel;
   let data;
   if (provider.kind === "gemini") {
-    const url = "https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(key);
-    data = await requestJson(url, {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: messages.map(m => m.role.toUpperCase() + ":\n" + m.content).join("\n\n") }] }] })
+    const input = messages.map(m => m.role.toUpperCase() + ":\n" + m.content).join("\n\n");
+    data = await requestJson("https://generativelanguage.googleapis.com/v1beta/interactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({ model, input })
     }, signal);
-    const output = data.candidates?.[0]?.content?.parts?.map(part => part.text || "").join("\n") || "";
+    const output = extractGeminiOutput(data);
     if (!output) throw new Error("GEMINI_EMPTY_RESPONSE");
     return output;
   }
@@ -205,4 +227,4 @@ app.post("/api/debate", requireAuth, async (req, res) => {
 app.use(express.static(path.join(__dirname, "public")));
 app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "public", "index.html")));
 const server = app.listen(PORT, "0.0.0.0", () => console.log("Mikael AI Team ouvindo na porta " + PORT));
-module.exports = { app, server, PROVIDERS, normalizeParticipants, isQuotaError };
+module.exports = { app, server, PROVIDERS, normalizeParticipants, isQuotaError, extractGeminiOutput };
